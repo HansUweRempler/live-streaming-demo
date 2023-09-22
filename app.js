@@ -1,3 +1,5 @@
+// npm install body-parser express socket.io
+
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
