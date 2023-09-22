@@ -26,6 +26,48 @@ const iceGatheringStatusLabel = document.getElementById('ice-gathering-status-la
 const signalingStatusLabel = document.getElementById('signaling-status-label');
 const streamingStatusLabel = document.getElementById('streaming-status-label');
 
+// act if a message is received via POST
+const socket = io.connect();
+
+socket.on('data', async (data) => {
+  const messageElement = document.getElementById('message');
+  
+  console.log('Received Data:', data); // Log the received data
+  
+  try {
+    const parsedData = JSON.parse(data);
+    console.log('Parsed Data:', parsedData); // Log the parsed object
+    console.log('Message:', parsedData.message); // Log the message property of the parsed object
+    messageElement.textContent = parsedData.message;
+    if (peerConnection?.signalingState === 'stable' || peerConnection?.iceConnectionState === 'connected') {
+      const talkResponse = await fetchWithRetries(`${DID_API.url}/talks/streams/${streamId}`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${DID_API.key}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          script: {
+            type: 'text',
+            subtitles: 'false',
+            provider: {type: 'microsoft', voice_id: 'en-US-DavisNeural'},
+            ssml: 'false',
+            input: parsedData.message
+          },
+          driver_url: 'bank://lively/',
+          config: {
+            stitch: true,
+          },
+          session_id: sessionId
+        }),
+      });
+    }
+  } catch (e) {
+    console.log('Error parsing data:', e); // Log error if parsing fails
+    messageElement.textContent = data;
+  }
+});
+
 const connectButton = document.getElementById('connect-button');
 connectButton.onclick = async () => {
   if (peerConnection && peerConnection.connectionState === 'connected') {
@@ -42,7 +84,9 @@ connectButton.onclick = async () => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      source_url: 'https://d-id-public-bucket.s3.amazonaws.com/or-roman.jpg',
+      // source_url: 'https://d-id-public-bucket.s3.amazonaws.com/or-roman.jpg',
+      // let's take uwe in chair instead
+      source_url: 'https://create-images-results.d-id.com/auth0%7C650923665486768084adc26e/upl_qvlI0OJFE4LOY7Xy3Wl3k/image.jpeg',
     }),
   });
 
@@ -236,7 +280,9 @@ function setVideoElement(stream) {
 
 function playIdleVideo() {
   talkVideo.srcObject = undefined;
-  talkVideo.src = 'or_idle.mp4';
+  // talkVideo.src = 'or_idle.mp4';
+  // idle video of uwe in chair
+  talkVideo.src = 'uwe_idle.mp4';
   talkVideo.loop = true;
 }
 
